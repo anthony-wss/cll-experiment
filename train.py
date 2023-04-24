@@ -54,9 +54,9 @@ def get_cifar10(T_option, T_filepath, noise_level, data_aug=False):
     
     dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
-    n_samples = 50000
+    n_samples = len(dataset)
     
-    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), int(n_samples*0.1)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), n_samples - int(n_samples*0.9)])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
@@ -138,7 +138,7 @@ def get_cifar20(data_aug=False):
     
     dataset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=test_transform)
-    n_samples = 50000
+    n_samples = len(dataset)
     global num_classes
     num_classes = 20
 
@@ -148,7 +148,7 @@ def get_cifar20(data_aug=False):
     
     dataset.targets = [_cifar100_to_cifar20(i) for i in dataset.targets]
     testset.targets = [_cifar100_to_cifar20(i) for i in testset.targets]
-    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), int(n_samples*0.1)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), n_samples - int(n_samples*0.9)])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
@@ -186,13 +186,10 @@ def choose_comp_label(labels, ord_label, noise_level):
             return ord_label
         return np.random.choice(labels)
     elif noise_level == "noiseless":
-        correct_cl = []
-        for cl in labels:
-            if cl != ord_label:
-                correct_cl.append(cl)
-        if len(correct_cl) == 0:
-            return [i for i in range(num_classes) if i != ord_label][np.random.randint(0, num_classes)]
-        return np.random.choice(correct_cl)
+        if labels[0] != ord_label:
+            return labels[0]
+        else:
+            return None
     elif noise_level == "multiple_cl":
         return labels
     else:
@@ -312,9 +309,9 @@ def get_clcifar10(data_aug=False, noise_level="random-1", bias=None):
     #     dataset = get_clcifar10_trainset(root='./data', noise_level="strong", transform=transform)
     dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10")
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
-    n_samples = 50000
+    n_samples = len(dataset)
     
-    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), int(n_samples*0.1)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), n_samples - int(n_samples*0.9)])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
@@ -359,14 +356,14 @@ def get_clcifar20(data_aug=False, noise_level="random-1", bias=None):
     
     dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20")
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=test_transform)
-    n_samples = 50000
+    n_samples = len(dataset)
 
     def _cifar100_to_cifar20(target):
         _dict = {0: 4, 1: 1, 2: 14, 3: 8, 4: 0, 5: 6, 6: 7, 7: 7, 8: 18, 9: 3, 10: 3, 11: 14, 12: 9, 13: 18, 14: 7, 15: 11, 16: 3, 17: 9, 18: 7, 19: 11, 20: 6, 21: 11, 22: 5, 23: 10, 24: 7, 25: 6, 26: 13, 27: 15, 28: 3, 29: 15, 30: 0, 31: 11, 32: 1, 33: 10, 34: 12, 35: 14, 36: 16, 37: 9, 38: 11, 39: 5, 40: 5, 41: 19, 42: 8, 43: 8, 44: 15, 45: 13, 46: 14, 47: 17, 48: 18, 49: 10, 50: 16, 51: 4, 52: 17, 53: 4, 54: 2, 55: 0, 56: 17, 57: 4, 58: 18, 59: 17, 60: 10, 61: 3, 62: 2, 63: 12, 64: 12, 65: 16, 66: 12, 67: 1, 68: 9, 69: 19, 70: 2, 71: 10, 72: 0, 73: 1, 74: 16, 75: 12, 76: 9, 77: 13, 78: 15, 79: 13, 80: 16, 81: 18, 82: 2, 83: 4, 84: 6, 85: 19, 86: 5, 87: 5, 88: 8, 89: 19, 90: 18, 91: 1, 92: 2, 93: 15, 94: 6, 95: 0, 96: 17, 97: 8, 98: 14, 99: 13}
         return _dict[target]
     
     testset.targets = [_cifar100_to_cifar20(i) for i in testset.targets]
-    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), int(n_samples*0.1)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), n_samples - int(n_samples*0.9)])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
@@ -542,6 +539,7 @@ def train(args):
     print(count_wrong_label / 4500)
 
     print(num_classes)
+    print("Size of training set:", len(trainset))
 
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     ord_trainloader = DataLoader(ord_trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
@@ -637,6 +635,11 @@ def train(args):
                     p = (1 - F.softmax(outputs, dim=1) + 1e-6).log()
                     loss = F.nll_loss(p, labels)
                     loss.backward()
+                
+                elif algo == "pc-sigmoid":
+                    outputs = outputs + F.nll_loss(outputs, labels, reduction='none').view(-1, 1)
+                    loss = torch.sigmoid(-1 * outputs).sum(dim=1).mean() - 0.5
+                    loss.backward()
 
                 else:
                     raise NotImplementedError
@@ -710,7 +713,8 @@ if __name__ == "__main__":
         "cpe-i",
         "l-w",
         "l-uw",
-        "scl-nl-w"
+        "scl-nl-w",
+        "pc-sigmoid"
     ]
 
     model_list = [
