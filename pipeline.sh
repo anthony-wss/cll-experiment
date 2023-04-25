@@ -1,5 +1,5 @@
 TWCC_CLI_CMD=/tmp2/b09902033/pcll/bin/twccli
-EXPERIMENT_CMD="$1"
+EXPERIMENT_CMD="cd cll-experiment; $1"
 LOG_FILE=ccs_res_`date +%s`.log
 
 echo "1. Creating CCS"      # 建立開發型容器
