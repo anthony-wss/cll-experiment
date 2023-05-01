@@ -4,15 +4,25 @@ import csv
 
 def main(args):
     df = pd.read_csv(args.s)
+
+    interrupt_runs = df[(df['best_epoch-valid_acc.test_acc'].isnull()) | 
+                        (df['State'] != "finished") | 
+                        (df['test_acc'].isnull())]
+    if len(interrupt_runs) > 0:
+        print(interrupt_runs)
+        interrupt_runs.to_csv(f"{args.s.split('/')[-1]}-interrupt.csv")
+        exit()
+
     header = ['algo', "selected by URE", "URE", "selected by SCEL", "SCEL", "selected by val_acc", "valid_acc", "best_ure", "best_scel", "best_val_acc"]
 
     dataset_name = args.dataset
     if dataset_name == "uniform-cifar10" or dataset_name == "uniform-cifar20":
-        algo_list = ["fwd-u", "ure-ga-u", "scl-nl", "scl-exp", "l-w", "l-uw"]
+        algo_list = ["fwd-u", "ure-ga-u", "scl-nl", "scl-exp", "l-w", "l-uw", "pc-sigmoid"]
     else:
-        algo_list = ["fwd-u", "fwd-r", "ure-ga-u", "ure-ga-r", "scl-nl", "scl-exp", "l-w", "l-uw"]
+        algo_list = ["fwd-u", "fwd-r", "ure-ga-u", "ure-ga-r", "scl-nl", "scl-exp", "l-w", "l-uw", "pc-sigmoid"]
 
     with open(f"{args.dataset}.csv", 'w', encoding='UTF8') as f:
+
         writer = csv.writer(f)
         writer.writerow(header)
         for algo in algo_list:

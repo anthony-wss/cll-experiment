@@ -562,7 +562,7 @@ def train(args):
 
     wandb.login()
     if args.test:
-        wandb.init(project="test", config={"lr": lr, "seed": seed}, tags=[algo])
+        wandb.init(project="rerun", config={"lr": lr, "seed": seed}, tags=[algo])
     else:
         wandb.init(project=dataset_name, config={"lr": lr, "seed": seed}, tags=[algo])
     
@@ -731,6 +731,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, help='Random seed')
     parser.add_argument('--data_aug', type=str)
     parser.add_argument('--test', action="store_true")
+    parser.add_argument('--data_cleaning_rate', type=float, default=1)
 
     args = parser.parse_args()
 
