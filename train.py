@@ -256,6 +256,18 @@ class CustomDataset(Dataset):
                 self.targets.append(np.random.choice(list(range(num_classes)), p=T[data["ord_labels"][i]]))
                 self.data.append(data["images"][i])
                 self.ord_labels.append(data["ord_labels"][i])
+        elif noise_level == "mcl":
+            noise = {'targets':[], 'data':[], 'ord_labels':[]}
+            for i in range(len(data["cl_labels"])):
+                for j in range(3):
+                    if data["cl_labels"][i][j] != data["ord_labels"][i]:
+                        self.targets.append(data["cl_labels"][i][j])
+                        self.data.append(data["images"][i])
+                        self.ord_labels.append(data["ord_labels"][i])
+                    else:
+                        noise['targets'].append(data["cl_labels"][i][j])
+                        noise['data'].append(data["images"][i])
+                        noise['ord_labels'].append(data["ord_labels"][i])
         else:
             noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
@@ -269,13 +281,13 @@ class CustomDataset(Dataset):
                         noise['targets'].append(data["cl_labels"][i][0])
                         noise['data'].append(data["images"][i])
                         noise['ord_labels'].append(data["ord_labels"][i])
-            if noise_level == "noiseless":
-                assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
-                noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
-                print(f"number of noise added: {noise_num}/{len(noise['data'])}")
-                self.targets.extend(noise['targets'][:noise_num])
-                self.data.extend(noise['data'][:noise_num])
-                self.ord_labels.extend(noise['ord_labels'][:noise_num])
+        if noise_level == "noiseless" or noise_level == "mcl":
+            assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
+            noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
+            print(f"number of noise added: {noise_num}/{len(noise['data'])}")
+            self.targets.extend(noise['targets'][:noise_num])
+            self.data.extend(noise['data'][:noise_num])
+            self.ord_labels.extend(noise['ord_labels'][:noise_num])
 
     def __len__(self):
         return len(self.data)
@@ -525,6 +537,10 @@ def train(args):
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10(dataset_name, None, None, data_aug)
     elif dataset_name == "clcifar10-strong":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "strong")
+    elif dataset_name == "clcifar10-mcl":
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate)
+    elif dataset_name == "clcifar20-mcl":
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate)
     else:
         raise NotImplementedError
 
@@ -716,7 +732,9 @@ if __name__ == "__main__":
         "uniform-cifar20",
         "fwd-original-with0",
         "fwd-original-without0",
-        "clcifar10-strong"
+        "clcifar10-strong",
+        "clcifar10-mcl",
+        "clcifar20-mcl"
     ]
 
     algo_list = [
