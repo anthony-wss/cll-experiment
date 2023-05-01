@@ -196,7 +196,7 @@ def choose_comp_label(labels, ord_label, noise_level):
         raise NotImplementedError
 
 class CustomDataset(Dataset):
-    def __init__(self, root="./data", noise_level="random-1", transform=None, dataset_name="clcifar10"):
+    def __init__(self, root="./data", noise_level="random-1", transform=None, dataset_name="clcifar10", data_cleaning_rate=None):
 
         os.makedirs(os.path.join(root, dataset_name), exist_ok=True)
         dataset_path = os.path.join(root, dataset_name, f"{dataset_name}.pkl")
@@ -225,6 +225,8 @@ class CustomDataset(Dataset):
         self.data = []
         self.ord_labels = []
         print("CLCIFAR noise level:", noise_level)
+        if noise_level == "noiseless":
+            print("Data cleaning rate:", data_cleaning_rate)
         # if noise_level == "strong":
         #     selected = [False] * 50000
         #     indexes = list(range(10))
@@ -255,12 +257,25 @@ class CustomDataset(Dataset):
                 self.data.append(data["images"][i])
                 self.ord_labels.append(data["ord_labels"][i])
         else:
+            noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
                 cl = choose_comp_label(data["cl_labels"][i], data["ord_labels"][i], noise_level)
                 if cl is not None:
                     self.targets.append(cl)
                     self.data.append(data["images"][i])
                     self.ord_labels.append(data["ord_labels"][i])
+                else:
+                    if noise_level == "noiseless":
+                        noise['targets'].append(data["cl_labels"][i][0])
+                        noise['data'].append(data["images"][i])
+                        noise['ord_labels'].append(data["ord_labels"][i])
+            if noise_level == "noiseless":
+                assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
+                noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
+                print(f"number of noise added: {noise_num}/{len(noise['data'])}")
+                self.targets.extend(noise['targets'][:noise_num])
+                self.data.extend(noise['data'][:noise_num])
+                self.ord_labels.extend(noise['ord_labels'][:noise_num])
 
     def __len__(self):
         return len(self.data)
@@ -274,7 +289,7 @@ class CustomDataset(Dataset):
 # def get_clcifar10_trainset(root="./data", noise_level="random-1", transform=None):
 #     return CustomDataset(root=root, noise_level=noise_level, transform=transform)
 
-def get_clcifar10(data_aug=False, noise_level="random-1", bias=None):
+def get_clcifar10(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -307,7 +322,7 @@ def get_clcifar10(data_aug=False, noise_level="random-1", bias=None):
     
     # if bias == "strong":
     #     dataset = get_clcifar10_trainset(root='./data', noise_level="strong", transform=transform)
-    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10")
+    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10", data_cleaning_rate=data_cleaning_rate)
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
     n_samples = len(dataset)
     
@@ -321,7 +336,7 @@ def get_clcifar10(data_aug=False, noise_level="random-1", bias=None):
     
     return trainset, validset, testset, ord_trainset, ord_validset
 
-def get_clcifar20(data_aug=False, noise_level="random-1", bias=None):
+def get_clcifar20(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -354,7 +369,7 @@ def get_clcifar20(data_aug=False, noise_level="random-1", bias=None):
     global num_classes
     num_classes = 20
     
-    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20")
+    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20", data_cleaning_rate=data_cleaning_rate)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=test_transform)
     n_samples = len(dataset)
 
@@ -473,6 +488,7 @@ def train(args):
     lr = args.lr
     seed = args.seed
     data_aug = True if args.data_aug.lower()=="true" else False
+    data_cleaning_rate = args.data_cleaning_rate
 
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -494,7 +510,7 @@ def train(args):
     elif dataset_name == "clcifar10-aggregate":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "aggregate")
     elif dataset_name == "clcifar10-noiseless":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "noiseless")
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "noiseless", data_cleaning_rate=data_cleaning_rate)
     elif dataset_name == "clcifar10-iid":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "iid")
     elif dataset_name == "clcifar20":
@@ -502,7 +518,7 @@ def train(args):
     elif dataset_name == "clcifar20-aggregate":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "aggregate")
     elif dataset_name == "clcifar20-noiseless":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "noiseless")
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "noiseless", data_cleaning_rate=data_cleaning_rate)
     elif dataset_name == "clcifar20-iid":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "iid")
     elif dataset_name[:3] == "fwd":
@@ -562,9 +578,9 @@ def train(args):
 
     wandb.login()
     if args.test:
-        wandb.init(project="rerun", config={"lr": lr, "seed": seed}, tags=[algo])
+        wandb.init(project="test", config={"lr": lr, "seed": seed, "data_cleaning_rate": data_cleaning_rate}, tags=[algo])
     else:
-        wandb.init(project=dataset_name, config={"lr": lr, "seed": seed}, tags=[algo])
+        wandb.init(project=dataset_name, config={"lr": lr, "seed": seed, "data_cleaning_rate": data_cleaning_rate}, tags=[algo])
     
     with tqdm(range(epochs), unit="epoch") as tepoch:
         # tepoch.set_description(f"lr={lr}")
