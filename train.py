@@ -196,7 +196,7 @@ def choose_comp_label(labels, ord_label, noise_level):
         raise NotImplementedError
 
 class CustomDataset(Dataset):
-    def __init__(self, root="./data", noise_level="random-1", transform=None, dataset_name="clcifar10", data_cleaning_rate=None):
+    def __init__(self, root="./data", noise_level="random-1", transform=None, dataset_name="clcifar10", data_cleaning_rate=None, num_cl=None):
 
         os.makedirs(os.path.join(root, dataset_name), exist_ok=True)
         dataset_path = os.path.join(root, dataset_name, f"{dataset_name}.pkl")
@@ -259,7 +259,7 @@ class CustomDataset(Dataset):
         elif noise_level == "mcl":
             noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
-                for j in range(3):
+                for j in range(num_cl):
                     if data["cl_labels"][i][j] != data["ord_labels"][i]:
                         self.targets.append(data["cl_labels"][i][j])
                         self.data.append(data["images"][i])
@@ -301,7 +301,7 @@ class CustomDataset(Dataset):
 # def get_clcifar10_trainset(root="./data", noise_level="random-1", transform=None):
 #     return CustomDataset(root=root, noise_level=noise_level, transform=transform)
 
-def get_clcifar10(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None):
+def get_clcifar10(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None, num_cl=None):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -334,7 +334,7 @@ def get_clcifar10(data_aug=False, noise_level="random-1", bias=None, data_cleani
     
     # if bias == "strong":
     #     dataset = get_clcifar10_trainset(root='./data', noise_level="strong", transform=transform)
-    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10", data_cleaning_rate=data_cleaning_rate)
+    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
     n_samples = len(dataset)
     
@@ -348,7 +348,7 @@ def get_clcifar10(data_aug=False, noise_level="random-1", bias=None, data_cleani
     
     return trainset, validset, testset, ord_trainset, ord_validset
 
-def get_clcifar20(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None):
+def get_clcifar20(data_aug=False, noise_level="random-1", bias=None, data_cleaning_rate=None, num_cl=None):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -381,7 +381,7 @@ def get_clcifar20(data_aug=False, noise_level="random-1", bias=None, data_cleani
     global num_classes
     num_classes = 20
     
-    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20", data_cleaning_rate=data_cleaning_rate)
+    dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=test_transform)
     n_samples = len(dataset)
 
@@ -501,6 +501,7 @@ def train(args):
     seed = args.seed
     data_aug = True if args.data_aug.lower()=="true" else False
     data_cleaning_rate = args.data_cleaning_rate
+    num_cl = int(args.num_cl)
 
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -538,9 +539,9 @@ def train(args):
     elif dataset_name == "clcifar10-strong":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "strong")
     elif dataset_name == "clcifar10-mcl":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate)
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     elif dataset_name == "clcifar20-mcl":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate)
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     else:
         raise NotImplementedError
 
@@ -766,6 +767,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_aug', type=str)
     parser.add_argument('--test', action="store_true")
     parser.add_argument('--data_cleaning_rate', type=float, default=1)
+    parser.add_argument('--num_cl', type=float, default=2)
 
     args = parser.parse_args()
 

@@ -6,4 +6,5 @@ python train.py \
     --seed=0 \
     --data_aug=false \
     --data_cleaning_rate=0 \
+    --num_cl=3 \
     --test
