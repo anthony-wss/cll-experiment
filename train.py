@@ -257,17 +257,11 @@ class CustomDataset(Dataset):
                 self.data.append(data["images"][i])
                 self.ord_labels.append(data["ord_labels"][i])
         elif noise_level == "mcl":
-            noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
                 for j in range(num_cl):
-                    if data["cl_labels"][i][j] != data["ord_labels"][i]:
-                        self.targets.append(data["cl_labels"][i][j])
-                        self.data.append(data["images"][i])
-                        self.ord_labels.append(data["ord_labels"][i])
-                    else:
-                        noise['targets'].append(data["cl_labels"][i][j])
-                        noise['data'].append(data["images"][i])
-                        noise['ord_labels'].append(data["ord_labels"][i])
+                    self.targets.append(data["cl_labels"][i][j])
+                    self.data.append(data["images"][i])
+                    self.ord_labels.append(data["ord_labels"][i])
         else:
             noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
@@ -281,7 +275,7 @@ class CustomDataset(Dataset):
                         noise['targets'].append(data["cl_labels"][i][0])
                         noise['data'].append(data["images"][i])
                         noise['ord_labels'].append(data["ord_labels"][i])
-        if noise_level == "noiseless" or noise_level == "mcl":
+        if noise_level == "noiseless":
             assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
             noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
             print(f"number of noise added: {noise_num}/{len(noise['data'])}")

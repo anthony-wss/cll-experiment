@@ -11,7 +11,7 @@ def main(args):
     if len(interrupt_runs) > 0:
         print(interrupt_runs)
         interrupt_runs.to_csv(f"{args.s.split('/')[-1]}-interrupt.csv")
-        exit()
+        # exit()
 
     header = ['algo', "selected by URE", "URE", "selected by SCEL", "SCEL", "selected by val_acc", "valid_acc", "best_ure", "best_scel", "best_val_acc"]
 
