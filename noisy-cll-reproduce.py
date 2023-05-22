@@ -539,7 +539,7 @@ def get_noisy_cifar10(noise_set, eta):
 
 def noisy_ga_loss(outputs, labels, class_prior, T):
     def l_mae(y, output):
-        return 2 - 2 * (-1) * F.nll_loss(F.softmax(output, dim=1), y)
+        return 2 - 2 * F.softmax(output, dim=1)[:, y].mean()
     if torch.det(T) != 0:
         Tinv = torch.inverse(T)
     else:
@@ -548,7 +548,11 @@ def noisy_ga_loss(outputs, labels, class_prior, T):
     loss_vec = torch.zeros(num_classes, device=device)
     for k in range(num_classes):
         for j in range(num_classes):
-            loss_vec[k] += class_prior[j] * Tinv[j][k] * l_mae(labels, outputs)
+            mask = j == labels
+            indexes = torch.arange(outputs.shape[0]).to(device)
+            indexes = torch.masked_select(indexes, mask)
+            if indexes.shape[0] > 0:
+                loss_vec[k] += class_prior[j] * Tinv[j][k] * l_mae(k, outputs[indexes])
     return loss_vec
 
 def train(args):
