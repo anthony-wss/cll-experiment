@@ -35,7 +35,7 @@ def train(args):
     if data_aug:
         print("Use data augmentation.")
 
-    trainset, validset, testset, ord_trainset, ord_validset = get_dataset(args)
+    trainset, validset, testset, ord_trainset, ord_validset, num_classes = get_dataset(args)
 
     # Print the complementary label distribution T
     dataset_T = get_dataset_T(trainset, num_classes)

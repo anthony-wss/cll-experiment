@@ -18,10 +18,12 @@ def get_dataset(args):
     data_cleaning_rate = args.data_cleaning_rate
     num_cl = args.num_cl
     eta = args.eta
+    num_classes = 10
     if dataset_name == "uniform-cifar10":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("uniform", None, None, data_aug)
     elif dataset_name == "uniform-cifar20":
-        trainset, validset, testset, ord_trainset, ord_validset = get_cifar20(data_aug)
+        trainset, validset, testset, ord_trainset, ord_validset = get_cifar20(T_option="uniform", data_aug=data_aug, eta=eta)
+        num_classes = 20
     elif dataset_name == "non_uniform-cifar10-noiseless":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("real", "random-1_T.npy", "zero", data_aug)
     elif dataset_name == "non_uniform-cifar10-noisy":
@@ -36,12 +38,7 @@ def get_dataset(args):
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "iid")
     elif dataset_name == "clcifar20":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug)
-    elif dataset_name == "clcifar20-aggregate":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "aggregate")
-    elif dataset_name == "clcifar20-noiseless":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "noiseless", data_cleaning_rate=data_cleaning_rate)
-    elif dataset_name == "clcifar20-iid":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "iid")
+        num_classes = 20
     elif dataset_name[:3] == "fwd":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10(dataset_name, None, None, data_aug)
     elif dataset_name == "clcifar10-strong":
@@ -50,11 +47,15 @@ def get_dataset(args):
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     elif dataset_name == "clcifar20-mcl":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
+        num_classes = 20
     elif dataset_name == "noisy-uniform-cifar10":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("synthetic-noise", None, None, data_aug, eta)
+    elif dataset_name == "noisy-uniform-cifar20":
+        trainset, validset, testset, ord_trainset, ord_validset = get_cifar20("synthetic-noise", data_aug, eta)
+        num_classes = 20
     else:
         raise NotImplementedError
-    return trainset, validset, testset, ord_trainset, ord_validset
+    return trainset, validset, testset, ord_trainset, ord_validset, num_classes
 
 def get_cifar10(T_option, T_filepath=None, noise_level=None, data_aug=False, eta=0):
     if data_aug:
@@ -146,7 +147,7 @@ def get_cifar10(T_option, T_filepath=None, noise_level=None, data_aug=False, eta
     
     return trainset, validset, testset, ord_trainset, ord_validset
 
-def get_cifar20(data_aug=False):
+def get_cifar20(T_option, data_aug=False, eta=0):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -194,9 +195,18 @@ def get_cifar20(data_aug=False):
     trainset.dataset.ord_labels = deepcopy(trainset.dataset.targets)
     validset.dataset.ord_labels = deepcopy(validset.dataset.targets)
     
-    T = torch.full([num_classes, num_classes], 1/(num_classes-1))
-    for i in range(num_classes):
-        T[i][i] = 0
+    if T_option == "uniform":
+        T = torch.full([num_classes, num_classes], 1/(num_classes-1))
+        for i in range(num_classes):
+            T[i][i] = 0
+    elif T_option == "synthetic-noise":
+        T = np.array(torch.full([num_classes, num_classes], (1-eta)/(num_classes-1)))
+        for i in range(num_classes):
+            T[i][i] = eta
+        for i in range(num_classes):
+            T[i] /= sum(T[i])
+    else:
+        raise NotImplementedError
     
     for i in range(n_samples):
         ord_label = trainset.dataset.targets[i]
