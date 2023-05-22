@@ -35,7 +35,8 @@ def get_args():
         "l-w",
         "l-uw",
         "scl-nl-w",
-        "pc-sigmoid"
+        "pc-sigmoid",
+        "fwd-int"
     ]
 
     model_list = [
@@ -56,6 +57,7 @@ def get_args():
     parser.add_argument('--num_cl', type=float, default=2)
     parser.add_argument('--valid_ratio', type=float, default=1)
     parser.add_argument('--eta', type=float, default=0)
+    parser.add_argument('--alpha', type=float, default=0)
 
     args = parser.parse_args()
     return args

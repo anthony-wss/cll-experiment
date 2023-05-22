@@ -51,6 +51,13 @@ def train(args):
             Q[i][i] = 0
     elif algo in ["fwd-r", "ure-ga-r"]:
         Q = dataset_T
+    elif algo == "fwd-int":
+        U = np.full([num_classes, num_classes], 1/(num_classes-1))
+        for i in range(num_classes):
+            U[i][i] = 0
+        dataset_T = get_dataset_T(trainset, num_classes)
+        Q = torch.tensor(args.alpha * U + (1-args.alpha) * dataset_T).to(device).float()
+        dataset_T = torch.tensor(dataset_T, dtype=torch.float).to(device)
     if algo[:3] in ["fwd", "ure"]:
         print("The transition matrix Q for training:")
         print(np.array(Q.cpu()))
@@ -64,7 +71,7 @@ def train(args):
             count_wrong_label += 1
     print("Class error rate:")
     print(count_cls_wrong_label / 4500)
-    print(f"{count_wrong_label}/45000")
+    print(f"{count_wrong_label}/45000 ({count_wrong_label/45000})")
 
     print(num_classes)
     print("Size of training set:", len(trainset))
@@ -169,6 +176,11 @@ def train(args):
                 elif algo == "pc-sigmoid":
                     outputs = outputs + F.nll_loss(outputs, labels, reduction='none').view(-1, 1)
                     loss = torch.sigmoid(-1 * outputs).sum(dim=1).mean() - 0.5
+                    loss.backward()
+                
+                elif algo == "fwd-int":
+                    q = torch.mm(F.softmax(outputs, dim=1), Q) + 1e-6
+                    loss = F.nll_loss(q.log(), labels.squeeze())
                     loss.backward()
 
                 else:
