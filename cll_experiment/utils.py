@@ -19,7 +19,9 @@ def get_args():
         "fwd-original-without0",
         "clcifar10-strong",
         "clcifar10-mcl",
-        "clcifar20-mcl"
+        "clcifar20-mcl",
+        "noisy-uniform-cifar10",
+        "noisy-uniform-cifar20"
     ]
 
     algo_list = [
@@ -53,6 +55,7 @@ def get_args():
     parser.add_argument('--data_cleaning_rate', type=float, default=1)
     parser.add_argument('--num_cl', type=float, default=2)
     parser.add_argument('--valid_ratio', type=float, default=1)
+    parser.add_argument('--eta', type=float, default=0)
 
     args = parser.parse_args()
     return args

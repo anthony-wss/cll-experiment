@@ -17,6 +17,7 @@ def get_dataset(args):
     data_aug = args.data_aug
     data_cleaning_rate = args.data_cleaning_rate
     num_cl = args.num_cl
+    eta = args.eta
     if dataset_name == "uniform-cifar10":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("uniform", None, None, data_aug)
     elif dataset_name == "uniform-cifar20":
@@ -49,11 +50,13 @@ def get_dataset(args):
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     elif dataset_name == "clcifar20-mcl":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "mcl", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
+    elif dataset_name == "noisy-uniform-cifar10":
+        trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("synthetic-noise", None, None, data_aug, eta)
     else:
         raise NotImplementedError
     return trainset, validset, testset, ord_trainset, ord_validset
 
-def get_cifar10(T_option, T_filepath, noise_level, data_aug=False):
+def get_cifar10(T_option, T_filepath=None, noise_level=None, data_aug=False, eta=0):
     if data_aug:
         transform = transforms.Compose(
             [
@@ -118,6 +121,12 @@ def get_cifar10(T_option, T_filepath, noise_level, data_aug=False):
                 T[i][indexes[j*3]] = 0.6/3
                 T[i][indexes[j*3+1]] = 0.3/3
                 T[i][indexes[j*3+2]] = 0.1/3
+            T[i] /= sum(T[i])
+    elif T_option == "synthetic-noise":
+        T = np.array(torch.full([num_classes, num_classes], (1-eta)/(num_classes-1)))
+        for i in range(num_classes):
+            T[i][i] = eta
+        for i in range(num_classes):
             T[i] /= sum(T[i])
     else:
         raise NotImplementedError

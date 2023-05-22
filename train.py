@@ -67,6 +67,8 @@ def train(args):
     print("Size of training set:", len(trainset))
     print("Size of validation set:", len(validset))
 
+    exit()
+
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     ord_trainloader = DataLoader(ord_trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     ord_validloader = DataLoader(ord_validset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
