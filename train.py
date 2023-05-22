@@ -120,7 +120,7 @@ def train(args):
                     loss.backward()
                 
                 elif algo[:6] == "ure-ga":
-                    loss = ga_loss(outputs, labels, class_prior, Q)
+                    loss = ga_loss(outputs, labels, class_prior, Q, num_classes)
                     if torch.min(loss) > 0:
                         loss = loss.sum()
                         loss.backward()
