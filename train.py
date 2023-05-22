@@ -56,18 +56,19 @@ def train(args):
         print(np.array(Q.cpu()))
 
     # Print dataset's error rate
-    count_wrong_label = np.zeros(num_classes)
+    count_cls_wrong_label = np.zeros(num_classes)
+    count_wrong_label = 0
     for i in range(len(trainset)):
         if trainset.dataset.targets[i] == trainset.dataset.ord_labels[i]:
-            count_wrong_label[trainset.dataset.targets[i]] += 1
+            count_cls_wrong_label[trainset.dataset.targets[i]] += 1
+            count_wrong_label += 1
     print("Class error rate:")
-    print(count_wrong_label / 4500)
+    print(count_cls_wrong_label / 4500)
+    print(f"{count_wrong_label}/45000")
 
     print(num_classes)
     print("Size of training set:", len(trainset))
     print("Size of validation set:", len(validset))
-
-    exit()
 
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     ord_trainloader = DataLoader(ord_trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
