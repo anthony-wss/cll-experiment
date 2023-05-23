@@ -41,3 +41,22 @@ def cpe_decode(model, dataloader, num_classes):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     return correct/total
+
+def robust_ga_loss(outputs, labels, class_prior, T, num_classes):
+    device = labels.device
+    def l_mae(y, output):
+        return 2 - 2 * F.softmax(output, dim=1)[:, y].mean()
+    if torch.det(T) != 0:
+        Tinv = torch.inverse(T)
+    else:
+        Tinv = torch.pinverse(T)
+        
+    loss_vec = torch.zeros(num_classes, device=device)
+    for k in range(num_classes):
+        for j in range(num_classes):
+            mask = j == labels
+            indexes = torch.arange(outputs.shape[0]).to(device)
+            indexes = torch.masked_select(indexes, mask)
+            if indexes.shape[0] > 0:
+                loss_vec[k] += class_prior[j] * Tinv[j][k] * l_mae(k, outputs[indexes])
+    return loss_vec

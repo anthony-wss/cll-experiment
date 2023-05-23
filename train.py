@@ -8,7 +8,7 @@ import wandb
 
 from cll_experiment.datasets import get_dataset
 from cll_experiment.models import get_resnet18, get_modified_resnet18
-from cll_experiment.algo import ga_loss, cpe_decode
+from cll_experiment.algo import ga_loss, cpe_decode, robust_ga_loss
 from cll_experiment.valid import compute_ure, compute_scel, validate
 from cll_experiment.utils import get_args, get_dataset_T
 
@@ -45,11 +45,11 @@ def train(args):
     dataset_T = torch.tensor(dataset_T, dtype=torch.float).to(device)
 
     # Set Q for forward algorithm
-    if algo in ["fwd-u", "ure-ga-u"]:
+    if algo in ["fwd-u", "ure-ga-u", "rob-mae-u"]:
         Q = torch.full([num_classes, num_classes], 1/(num_classes-1), device=device)
         for i in range(num_classes):
             Q[i][i] = 0
-    elif algo in ["fwd-r", "ure-ga-r"]:
+    elif algo in ["fwd-r", "ure-ga-r", "rob-mae-r"]:
         Q = dataset_T
     elif algo == "fwd-int":
         U = np.full([num_classes, num_classes], 1/(num_classes-1))
@@ -182,6 +182,16 @@ def train(args):
                     q = torch.mm(F.softmax(outputs, dim=1), Q) + 1e-6
                     loss = F.nll_loss(q.log(), labels.squeeze())
                     loss.backward()
+                
+                elif algo[:7] == "rob-mae":
+                    loss = robust_ga_loss(outputs, labels, class_prior, Q, num_classes)
+                    if torch.min(loss) > 0:
+                        loss = loss.sum()
+                        loss.backward()
+                    else:
+                        beta_vec = torch.zeros(num_classes, requires_grad=True).to(device)
+                        loss = torch.minimum(beta_vec, loss).sum() * -1
+                        loss.backward()
 
                 else:
                     raise NotImplementedError

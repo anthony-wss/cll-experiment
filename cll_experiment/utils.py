@@ -36,7 +36,9 @@ def get_args():
         "l-uw",
         "scl-nl-w",
         "pc-sigmoid",
-        "fwd-int"
+        "fwd-int",
+        "rob-mae-u",
+        "rob-mae-r"
     ]
 
     model_list = [
