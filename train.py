@@ -71,7 +71,7 @@ def train(args):
             count_wrong_label += 1
     print("Class error rate:")
     print(count_cls_wrong_label / 4500)
-    print(f"{count_wrong_label}/45000 ({count_wrong_label/45000})")
+    print(f"{count_wrong_label}/{len(trainset)} ({count_wrong_label/len(trainset)})")
 
     print(num_classes)
     print("Size of training set:", len(trainset))

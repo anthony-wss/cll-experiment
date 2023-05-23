@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument('--seed', type=int, help='Random seed')
     parser.add_argument('--data_aug', type=str)
     parser.add_argument('--test', action="store_true")
-    parser.add_argument('--data_cleaning_rate', type=float, default=1)
+    parser.add_argument('--data_cleaning_rate', type=float, default=0)
     parser.add_argument('--num_cl', type=float, default=2)
     parser.add_argument('--valid_ratio', type=float, default=1)
     parser.add_argument('--eta', type=float, default=0)

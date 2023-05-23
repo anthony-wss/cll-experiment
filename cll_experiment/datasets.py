@@ -29,15 +29,17 @@ def get_dataset(args):
     elif dataset_name == "non_uniform-cifar10-noisy":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10("real", "random-1_T.npy", None, data_aug)
     elif dataset_name == "clcifar10":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug=data_aug, valid_ratio=args.valid_ratio)
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug=data_aug, valid_ratio=args.valid_ratio, data_cleaning_rate=data_cleaning_rate)
     elif dataset_name == "clcifar10-aggregate":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "aggregate")
     elif dataset_name == "clcifar10-noiseless":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "noiseless", data_cleaning_rate=data_cleaning_rate)
+    elif dataset_name == "clcifar20-noiseless":
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, "noiseless", data_cleaning_rate=data_cleaning_rate)
     elif dataset_name == "clcifar10-iid":
         trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10(data_aug, "iid")
     elif dataset_name == "clcifar20":
-        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug)
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar20(data_aug, data_cleaning_rate=data_cleaning_rate)
         num_classes = 20
     elif dataset_name[:3] == "fwd":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar10(dataset_name, None, None, data_aug)
@@ -274,21 +276,8 @@ class CustomDataset(Dataset):
         self.targets = []
         self.data = []
         self.ord_labels = []
-        print("CLCIFAR noise level:", noise_level)
-        if noise_level == "noiseless":
-            print("Data cleaning rate:", data_cleaning_rate)
-        # if noise_level == "strong":
-        #     selected = [False] * 50000
-        #     indexes = list(range(10))
-        #     np.random.shuffle(indexes)
-
-        #     for k in indexes:
-        #         for i in range(50000):
-        #             if not selected[i] and k != data['ord_labels'] and k in data['cl_labels'][i]:
-        #                 selected[i] = True
-        #                 self.targets.append(k)
-        #                 self.data.append(data["images"][i])
-        #                 self.ord_labels.append(data["ord_labels"][i])
+        print("Noise level:", noise_level)
+        print("Data cleaning rate:", data_cleaning_rate)
         if noise_level == "iid":
             targets = []
             true_labels = []
@@ -316,22 +305,26 @@ class CustomDataset(Dataset):
             noise = {'targets':[], 'data':[], 'ord_labels':[]}
             for i in range(len(data["cl_labels"])):
                 cl = choose_comp_label(data["cl_labels"][i], data["ord_labels"][i], noise_level)
-                if cl is not None:
+                if cl != data["ord_labels"][i]:
                     self.targets.append(cl)
                     self.data.append(data["images"][i])
                     self.ord_labels.append(data["ord_labels"][i])
                 else:
-                    if noise_level == "noiseless":
-                        noise['targets'].append(data["cl_labels"][i][0])
-                        noise['data'].append(data["images"][i])
-                        noise['ord_labels'].append(data["ord_labels"][i])
-        if noise_level == "noiseless":
-            assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
-            noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
-            print(f"number of noise added: {noise_num}/{len(noise['data'])}")
-            self.targets.extend(noise['targets'][:noise_num])
-            self.data.extend(noise['data'][:noise_num])
-            self.ord_labels.extend(noise['ord_labels'][:noise_num])
+                    noise['targets'].append(data["cl_labels"][i][0])
+                    noise['data'].append(data["images"][i])
+                    noise['ord_labels'].append(data["ord_labels"][i])
+        assert((0 <= data_cleaning_rate) and (data_cleaning_rate <= 1))
+        noise_num = int(len(noise['data']) * (1-data_cleaning_rate))
+        print(f"number of noise added: {noise_num}/{len(noise['data'])}")
+        self.targets.extend(noise['targets'][:noise_num])
+        self.data.extend(noise['data'][:noise_num])
+        self.ord_labels.extend(noise['ord_labels'][:noise_num])
+
+        indexes = np.arange(len(self.data))
+        np.random.shuffle(indexes)
+        self.targets = [self.targets[i] for i in indexes]
+        self.data = [self.data[i] for i in indexes]
+        self.ord_labels = [self.ord_labels[i] for i in indexes]
 
     def __len__(self):
         return len(self.data)
@@ -380,12 +373,12 @@ def get_clcifar10(data_aug=False, noise_level="random-1", data_cleaning_rate=Non
     #     dataset = get_clcifar10_trainset(root='./data', noise_level="strong", transform=transform)
     dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar10", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
-    
+
     n_samples = len(dataset)
-    trainset_size = 45000
-    validset_size = int(5000 * valid_ratio)
+    validset_size = int(n_samples * 0.1)
+    trainset_size = n_samples - validset_size
     
-    ord_trainset, ord_validset, _ = torch.utils.data.random_split(dataset, [trainset_size, validset_size, n_samples - (trainset_size + validset_size)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [trainset_size, validset_size])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
@@ -429,14 +422,18 @@ def get_clcifar20(data_aug=False, noise_level="random-1", bias=None, data_cleani
     
     dataset = CustomDataset(root='./data', noise_level=noise_level, transform=transform, dataset_name="clcifar20", data_cleaning_rate=data_cleaning_rate, num_cl=num_cl)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=test_transform)
+    
     n_samples = len(dataset)
-
+    validset_size = int(n_samples * 0.1)
+    trainset_size = n_samples - validset_size
+    
+    
     def _cifar100_to_cifar20(target):
         _dict = {0: 4, 1: 1, 2: 14, 3: 8, 4: 0, 5: 6, 6: 7, 7: 7, 8: 18, 9: 3, 10: 3, 11: 14, 12: 9, 13: 18, 14: 7, 15: 11, 16: 3, 17: 9, 18: 7, 19: 11, 20: 6, 21: 11, 22: 5, 23: 10, 24: 7, 25: 6, 26: 13, 27: 15, 28: 3, 29: 15, 30: 0, 31: 11, 32: 1, 33: 10, 34: 12, 35: 14, 36: 16, 37: 9, 38: 11, 39: 5, 40: 5, 41: 19, 42: 8, 43: 8, 44: 15, 45: 13, 46: 14, 47: 17, 48: 18, 49: 10, 50: 16, 51: 4, 52: 17, 53: 4, 54: 2, 55: 0, 56: 17, 57: 4, 58: 18, 59: 17, 60: 10, 61: 3, 62: 2, 63: 12, 64: 12, 65: 16, 66: 12, 67: 1, 68: 9, 69: 19, 70: 2, 71: 10, 72: 0, 73: 1, 74: 16, 75: 12, 76: 9, 77: 13, 78: 15, 79: 13, 80: 16, 81: 18, 82: 2, 83: 4, 84: 6, 85: 19, 86: 5, 87: 5, 88: 8, 89: 19, 90: 18, 91: 1, 92: 2, 93: 15, 94: 6, 95: 0, 96: 17, 97: 8, 98: 14, 99: 13}
         return _dict[target]
     
     testset.targets = [_cifar100_to_cifar20(i) for i in testset.targets]
-    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [int(n_samples*0.9), n_samples - int(n_samples*0.9)])
+    ord_trainset, ord_validset = torch.utils.data.random_split(dataset, [trainset_size, validset_size])
     
     trainset = deepcopy(ord_trainset)
     validset = deepcopy(ord_validset)
