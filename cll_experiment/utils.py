@@ -4,24 +4,15 @@ import numpy as np
 def get_args():
     dataset_list = [
         "uniform-cifar10",
-        "non_uniform-cifar10-noiseless",
-        "non_uniform-cifar10-noisy",
-        "clcifar10",
-        "clcifar10-aggregate",
-        "clcifar10-noiseless",
-        "clcifar10-iid",
-        "clcifar20",
-        "clcifar20-aggregate",
-        "clcifar20-noiseless",
-        "clcifar20-iid",
         "uniform-cifar20",
-        "fwd-original-with0",
-        "fwd-original-without0",
-        "clcifar10-strong",
-        "clcifar10-mcl",
-        "clcifar20-mcl",
+        "clcifar10",
+        "clcifar20",
+        "clcifar10-noiseless",
+        "clcifar20-noiseless",
         "noisy-uniform-cifar10",
-        "noisy-uniform-cifar20"
+        "noisy-uniform-cifar20",
+        "clcifar10-n",
+        "clcifar20-n"
     ]
 
     algo_list = [
@@ -50,14 +41,13 @@ def get_args():
 
     parser.add_argument('--algo', type=str, choices=algo_list, help='Algorithm')
     parser.add_argument('--dataset_name', type=str, choices=dataset_list, help='Dataset name')
-    parser.add_argument('--model', type=str, choices=model_list, help='Model name')
-    parser.add_argument('--lr', type=float, help='Learning rate')
-    parser.add_argument('--seed', type=int, help='Random seed')
-    parser.add_argument('--data_aug', type=str)
+
+    parser.add_argument('--model', type=str, choices=model_list, help='Model name', default="resnet")
+    parser.add_argument('--lr', type=float, help='Learning rate', default=1e-4)
+    parser.add_argument('--seed', type=int, help='Random seed', default=0)
+    parser.add_argument('--data_aug', type=str, default="false")
     parser.add_argument('--test', action="store_true")
     parser.add_argument('--data_cleaning_rate', type=float, default=0)
-    parser.add_argument('--num_cl', type=float, default=2)
-    parser.add_argument('--valid_ratio', type=float, default=1)
     parser.add_argument('--eta', type=float, default=0)
     parser.add_argument('--alpha', type=float, default=0)
 
