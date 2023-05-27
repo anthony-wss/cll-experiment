@@ -1,5 +1,5 @@
 python train.py \
-    --algo=fwd-r \
+    --algo=rob-sl \
     --dataset_name=clcifar20-n \
     --data_cleaning_rate=1 \
     --model=m-resnet18 \

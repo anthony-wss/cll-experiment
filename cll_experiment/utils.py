@@ -28,8 +28,11 @@ def get_args():
         "scl-nl-w",
         "pc-sigmoid",
         "fwd-int",
-        "rob-mae-u",
-        "rob-mae-r"
+        "rob-mae",
+        "rob-cce",
+        "rob-wmae",
+        "rob-gce",
+        "rob-sl"
     ]
 
     model_list = [

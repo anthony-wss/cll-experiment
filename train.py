@@ -45,11 +45,11 @@ def train(args):
     dataset_T = torch.tensor(dataset_T, dtype=torch.float).to(device)
 
     # Set Q for forward algorithm
-    if algo in ["fwd-u", "ure-ga-u", "rob-mae-u"]:
+    if algo in ["fwd-u", "ure-ga-u"]:
         Q = torch.full([num_classes, num_classes], 1/(num_classes-1), device=device)
         for i in range(num_classes):
             Q[i][i] = 0
-    elif algo in ["fwd-r", "ure-ga-r", "rob-mae-r"]:
+    elif algo in ["fwd-r", "ure-ga-r"] or algo[:3] == "rob":
         Q = dataset_T
     elif algo == "fwd-int":
         U = np.full([num_classes, num_classes], 1/(num_classes-1))
@@ -183,8 +183,8 @@ def train(args):
                     loss = F.nll_loss(q.log(), labels.squeeze())
                     loss.backward()
                 
-                elif algo[:7] == "rob-mae":
-                    loss = robust_ga_loss(outputs, labels, class_prior, Q, num_classes)
+                elif algo[:3] == "rob":
+                    loss = robust_ga_loss(outputs, labels, class_prior, Q, num_classes, algo)
                     if torch.min(loss) > 0:
                         loss = loss.sum()
                         loss.backward()

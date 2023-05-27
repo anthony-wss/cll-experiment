@@ -42,14 +42,43 @@ def cpe_decode(model, dataloader, num_classes):
             correct += (predicted == labels).sum().item()
     return correct/total
 
-def robust_ga_loss(outputs, labels, class_prior, T, num_classes):
+
+def l_mae(y, output):
+    return 2 - 2 * F.softmax(output, dim=1)[:, y]
+
+def l_cce(y, output):
+    return -F.log_softmax(output, dim=1)[:, y]
+
+def l_wmae(y, output, w):
+    return w[y] * l_mae(y, output)
+
+def l_gce(y, output, q=0.7):
+    return (1-F.softmax(output, dim=1)[:, y].pow(q)) / q
+
+def l_sl(y, output, alpha=0.1, beta=1.0, A=-4):
+    def l_rce(y, output, A):
+        return -A * F.softmax(output, dim=1).sum(dim=1) - F.softmax(output, dim=1)[:, y]
+    return alpha * l_cce(y, output) + beta * l_rce(y, output, A)
+
+def robust_ga_loss(outputs, labels, class_prior, T, num_classes, algo_name):
     device = labels.device
-    def l_mae(y, output):
-        return 2 - 2 * F.softmax(output, dim=1)[:, y].mean()
     if torch.det(T) != 0:
         Tinv = torch.inverse(T)
     else:
         Tinv = torch.pinverse(T)
+    
+    if algo_name == 'rob-mae':
+        loss_func = l_mae
+    elif algo_name == 'rob-cce':
+        loss_func = l_cce
+    elif algo_name == 'rob-wmae':
+        loss_func = l_wmae
+    elif algo_name == 'rob-gce':
+        loss_func = l_gce
+    elif algo_name == 'rob-sl':
+        loss_func = l_sl
+    else:
+        raise NotImplementedError
         
     loss_vec = torch.zeros(num_classes, device=device)
     for k in range(num_classes):
@@ -58,5 +87,5 @@ def robust_ga_loss(outputs, labels, class_prior, T, num_classes):
             indexes = torch.arange(outputs.shape[0]).to(device)
             indexes = torch.masked_select(indexes, mask)
             if indexes.shape[0] > 0:
-                loss_vec[k] += class_prior[j] * Tinv[j][k] * l_mae(k, outputs[indexes])
+                loss_vec[k] += class_prior[j] * Tinv[j][k] * loss_func(k, outputs[indexes]).mean()
     return loss_vec
