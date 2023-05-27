@@ -49,8 +49,10 @@ def l_mae(y, output):
 def l_cce(y, output):
     return -F.log_softmax(output, dim=1)[:, y]
 
-def l_wmae(y, output, w):
-    return w[y] * l_mae(y, output)
+def l_wmae(w):
+    def real_l_wmae(y, output):
+        return w[y] * l_mae(y, output)
+    return real_l_wmae
 
 def l_gce(y, output, q=0.7):
     return (1-F.softmax(output, dim=1)[:, y].pow(q)) / q
@@ -72,7 +74,7 @@ def robust_ga_loss(outputs, labels, class_prior, T, num_classes, algo_name):
     elif algo_name == 'rob-cce':
         loss_func = l_cce
     elif algo_name == 'rob-wmae':
-        loss_func = l_wmae
+        loss_func = l_wmae(Tinv.sum(dim=0).squeeze())
     elif algo_name == 'rob-gce':
         loss_func = l_gce
     elif algo_name == 'rob-sl':
