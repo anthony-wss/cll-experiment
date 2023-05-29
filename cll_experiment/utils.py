@@ -12,7 +12,8 @@ def get_args():
         "noisy-uniform-cifar10",
         "noisy-uniform-cifar20",
         "clcifar10-n",
-        "clcifar20-n"
+        "clcifar20-n",
+        "b-clcifar10-n"
     ]
 
     algo_list = [

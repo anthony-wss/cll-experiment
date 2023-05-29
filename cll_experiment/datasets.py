@@ -38,6 +38,8 @@ def get_dataset(args):
     elif dataset_name == "noisy-uniform-cifar20":
         trainset, validset, testset, ord_trainset, ord_validset = get_cifar20("synthetic-noise", data_aug=data_aug, eta=eta)
         num_classes = 20
+    elif dataset_name == 'b-clcifar10-n':
+        trainset, validset, testset, ord_trainset, ord_validset = get_clcifar10('b-clcifar10-n', data_aug, data_cleaning_rate=data_cleaning_rate)
     else:
         raise NotImplementedError
     return trainset, validset, testset, ord_trainset, ord_validset, num_classes
@@ -188,8 +190,11 @@ class CustomDataset(Dataset):
         os.makedirs(os.path.join(root, dataset_name), exist_ok=True)
         dataset_path = os.path.join(root, dataset_name, f"{dataset_name}.pkl")
 
+        if dataset_name == 'b-clcifar10-n':
+            dataset_path = dataset_path = os.path.join(root, 'clcifar10', "clcifar10.pkl")
+
         if not os.path.exists(dataset_path):
-            if dataset_name == "clcifar10":
+            if dataset_name == "clcifar10" or 'b-clcifar10-n':
                 print("Downloading clcifar10(148.3MB)")
                 url = "https://clcifar.s3.us-west-2.amazonaws.com/clcifar10.pkl"
                 with tqdm(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=url.split('/')[-1]) as t:
@@ -210,12 +215,25 @@ class CustomDataset(Dataset):
 
         self.transform = transform
         self.input_dim = 3 * 32 * 32
-        self.num_classes = 10 if dataset_name == "clcifar10" else 20
 
         self.targets = []
         self.data = []
         self.ord_labels = []
         print("Data cleaning rate:", data_cleaning_rate)
+
+        if dataset_name == 'b-clcifar10-n':
+            T = np.zeros([10, 10])
+            for i in range(len(data['cl_labels'])):
+                for j in range(3):
+                    T[data['ord_labels'][i]][data['cl_labels'][i][j]] += 1
+            for i in range(10):
+                T[i] /= sum(T[i])
+            for i in range(len(data['ord_labels'])):
+                ord_label = data['ord_labels'][i]
+                self.targets.append(np.random.choice(list(range(10)), p=T[ord_label]))
+            self.data = data['images']
+            self.ord_labels = data['ord_labels']
+            return
         
         noise = {'targets':[], 'data':[], 'ord_labels':[]}
         for i in range(len(data["cl_labels"])):
