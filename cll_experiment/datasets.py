@@ -227,7 +227,10 @@ class CustomDataset(Dataset):
                 for j in range(3):
                     T[data['ord_labels'][i]][data['cl_labels'][i][j]] += 1
             for i in range(10):
+                if data_cleaning_rate == 1:
+                    T[i][i] = 0
                 T[i] /= sum(T[i])
+
             for i in range(len(data['ord_labels'])):
                 ord_label = data['ord_labels'][i]
                 self.targets.append(np.random.choice(list(range(10)), p=T[ord_label]))
