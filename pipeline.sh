@@ -12,7 +12,7 @@ echo "2. CCS ID:" $CCS_ID   # 開發型容器 ID
 # ssh -t -o "StrictHostKeyChecking=no" `$TWCC_CLI_CMD ls ccs -gssh -s $CCS_ID` "/bin/bash --login -c nvidia-smi"
 
 echo "4. RUN GPU"           # 執行運算程式
-ssh -t -o "StrictHostKeyChecking=no" `$TWCC_CLI_CMD ls ccs -gssh -s $CCS_ID` "/bin/bash --login -c '$EXPERIMENT_CMD'"
+sshpass -f .passwd ssh -t -o "StrictHostKeyChecking=no" `$TWCC_CLI_CMD ls ccs -gssh -s $CCS_ID` "/bin/bash --login -c '$EXPERIMENT_CMD'"
 # 可依據您的程式，修改 "cd gpu-burn;/bin/bash --login -c './gpu_burn 150'"
 
 echo "5. GC GPU"            # 刪除開發型容器

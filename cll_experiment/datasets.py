@@ -229,6 +229,12 @@ class CustomDataset(Dataset):
             for i in range(10):
                 if data_cleaning_rate == 1:
                     T[i][i] = 0
+                else:
+                    T[i][i] *= (1 - data_cleaning_rate)
+                x = (sum(T[i]) - T[i][i]) / 9
+                for j in range(10):
+                    if j != i:
+                        T[i][j] = x
                 T[i] /= sum(T[i])
 
             for i in range(len(data['ord_labels'])):

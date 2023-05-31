@@ -2,3 +2,4 @@ data/
 wandb/
 ccs_res_*
 __pycache__/
+.passwd
