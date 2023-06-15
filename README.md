@@ -1,5 +1,5 @@
 # cll-experiment
-This is the code repository for the "CLCIFAR: CIFAR-Derived Benchmark Datasets with Human Annotated Complementary Labels" experiment, as described in the paper CLCIFAR: CIFAR-Derived Benchmark Datasets with Human Annotated Complementary Labels.(https://arxiv.org/abs/2305.08295)
+This is the non-official code repository for the "CLCIFAR: CIFAR-Derived Benchmark Datasets with Human Annotated Complementary Labels" experiment, as described in the paper CLCIFAR: CIFAR-Derived Benchmark Datasets with Human Annotated Complementary Labels.(https://arxiv.org/abs/2305.08295)
 
 ### Prerequisites
 Before executing the code, please ensure that you have `wandb` installed.
