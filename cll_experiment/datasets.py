@@ -221,21 +221,18 @@ class CustomDataset(Dataset):
         self.ord_labels = []
         print("Data cleaning rate:", data_cleaning_rate)
 
-        if dataset_name == 'b-clcifar10-n':
+        if dataset_name == 'b-clcifar10-un':
             T = np.zeros([10, 10])
             for i in range(len(data['cl_labels'])):
                 for j in range(3):
                     T[data['ord_labels'][i]][data['cl_labels'][i][j]] += 1
+            noise_rate = 0
             for i in range(10):
-                if data_cleaning_rate == 1:
-                    T[i][i] = 0
-                else:
-                    T[i][i] *= (1 - data_cleaning_rate)
-                x = (sum(T[i]) - T[i][i]) / 9
-                for j in range(10):
-                    if j != i:
-                        T[i][j] = x
-                T[i] /= sum(T[i])
+                noise_rate += T[i][i]
+                T[i][i] = 0
+            noise_rate *= (1 - data_cleaning_rate)
+            for i in range(10):
+                T[i] = sum(T[i])
 
             for i in range(len(data['ord_labels'])):
                 ord_label = data['ord_labels'][i]
